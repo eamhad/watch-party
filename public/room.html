@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Watch Party Room</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link rel="preconnect"
+href="https://fonts.googleapis.com">
+
+<link rel="preconnect"
+href="https://fonts.gstatic.com"
+crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+rel="stylesheet">
+
+</head>
+
+<body>
+
+<header>
+
+<h2>🎬 Watch Party</h2>
+
+<div id="roomInfo">
+
+<div>
+
+Room
+
+<span id="roomCodeDisplay"></span>
+
+</div>
+
+<div>
+
+User
+
+<span id="usernameDisplay"></span>
+
+</div>
+
+<button id="leaveRoom">
+
+Leave
+
+</button>
+
+</div>
+
+</header>
+
+<div class="main">
+
+<div class="video-section">
+
+<video
+id="video"
+controls
+controlsList="nodownload"
+></video>
+
+<div id="videoList">
+
+<!-- Filled by JavaScript -->
+
+</div>
+
+</div>
+
+<div class="side">
+
+<div class="users">
+
+<h3>
+
+👥 Online
+
+</h3>
+
+<div id="usersList">
+
+</div>
+
+</div>
+
+<div class="chat">
+
+<h3>
+
+💬 Chat
+
+</h3>
+
+<div id="messages">
+
+</div>
+
+<div class="chatInput">
+
+<input
+
+id="messageInput"
+
+placeholder="Type a message..."
+
+autocomplete="off"
+
+>
+
+<button id="sendBtn">
+
+Send
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script src="room.js"></script>
+
+</body>
+
+</html>
