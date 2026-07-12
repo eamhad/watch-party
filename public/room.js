@@ -72,9 +72,9 @@ if (isHost) {
                 return;
             }
 
-            uploadStatus.textContent = "Uploading to storage...";
+             uploadStatus.textContent = "Uploading to storage...";
 
-            // Clean PUT fetch with NO headers to bypass B2 preflight blocks
+            // Send a clean PUT with no extra headers so the signature stays simple
             const uploadResponse = await fetch(urlData.uploadUrl, {
                 method: "PUT",
                 body: file
