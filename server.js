@@ -22,7 +22,9 @@ const b2 = new S3Client({
     region: process.env.B2_REGION,
     endpoint: process.env.B2_ENDPOINT,
     forcePathStyle: true,
-    requestChecksumCalculation: "WHEN_REQUIRED",
+    // Add these two explicit flags below to stop the SDK from forcing checksum signatures:
+    requestChecksumCalculation: "WHEN_REQUIRED", 
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: {
         accessKeyId: process.env.B2_KEY_ID,
         secretAccessKey: process.env.B2_APPLICATION_KEY
