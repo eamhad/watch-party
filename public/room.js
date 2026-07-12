@@ -74,11 +74,11 @@ if (isHost) {
 
              uploadStatus.textContent = "Uploading to storage...";
 
-            // Send a clean PUT with no extra headers so the signature stays simple
             const uploadResponse = await fetch(urlData.uploadUrl, {
-                method: "PUT",
-                body: file
-            });
+    method: "PUT",
+    headers: { "Content-Type": "video/mp4" },
+    body: file
+});
 
             if (!uploadResponse.ok) {
                 uploadStatus.textContent = "Upload failed";
