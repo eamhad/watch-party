@@ -44,7 +44,7 @@ async function getPlaybackUrl(key) {
 // Get a temporary link the host's browser can upload directly to
 app.post("/api/upload-url", async (req, res) => {
     try {
-        const { filename } = req.body;
+        const { filename, contentType } = req.body; // <-- Grab contentType from client
 
         if (!filename) {
             return res.status(400).json({ error: "filename is required" });
@@ -56,7 +56,7 @@ app.post("/api/upload-url", async (req, res) => {
         const command = new PutObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
             Key: key,
-            ContentType: "video/mp4"
+            ContentType: contentType || "video/mp4" // <-- Dynamically use the file's content type
         });
 
         const uploadUrl = await getSignedUrl(b2, command, { expiresIn: 3600 });
