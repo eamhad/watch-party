@@ -1,54 +1,54 @@
-const socket = io();
+const socket = io();[cite: 2]
 
 // =========================
 // USER INFO
 // =========================
 
-const username = localStorage.getItem("username");
-const roomCode = localStorage.getItem("roomCode");
-const isHost = localStorage.getItem("isHost") === "true";
+const username = localStorage.getItem("username");[cite: 2]
+const roomCode = localStorage.getItem("roomCode");[cite: 2]
+const isHost = localStorage.getItem("isHost") === "true";[cite: 2]
 
-if (!username || !roomCode) {
-    window.location = "/";
+if (!username || !roomCode) {[cite: 2]
+    window.location = "/";[cite: 2]
 }
 
 // =========================
 // ELEMENTS
 // =========================
 
-const usernameDisplay = document.getElementById("usernameDisplay");
-const roomCodeDisplay = document.getElementById("roomCodeDisplay");
+const usernameDisplay = document.getElementById("usernameDisplay");[cite: 2]
+const roomCodeDisplay = document.getElementById("roomCodeDisplay");[cite: 2]
 
-const video = document.getElementById("video");
-const videoList = document.getElementById("videoList");
+const video = document.getElementById("video");[cite: 2]
+const videoList = document.getElementById("videoList");[cite: 2]
 
-const uploadBox = document.getElementById("uploadBox");
-const uploadInput = document.getElementById("uploadInput");
-const uploadBtn = document.getElementById("uploadBtn");
-const uploadStatus = document.getElementById("uploadStatus");
+const uploadBox = document.getElementById("uploadBox");[cite: 2]
+const uploadInput = document.getElementById("uploadInput");[cite: 2]
+const uploadBtn = document.getElementById("uploadBtn");[cite: 2]
+const uploadStatus = document.getElementById("uploadStatus");[cite: 2]
 
-const usersList = document.getElementById("usersList");
+const usersList = document.getElementById("usersList");[cite: 2]
 
-const messages = document.getElementById("messages");
+const messages = document.getElementById("messages");[cite: 2]
 
-const messageInput = document.getElementById("messageInput");
+const messageInput = document.getElementById("messageInput");[cite: 2]
 
-const sendBtn = document.getElementById("sendBtn");
+const sendBtn = document.getElementById("sendBtn");[cite: 2]
 
-const leaveBtn = document.getElementById("leaveRoom");
+const leaveBtn = document.getElementById("leaveRoom");[cite: 2]
 
 // =========================
 // DISPLAY USER INFO
 // =========================
 
-usernameDisplay.textContent = username;
-roomCodeDisplay.textContent = roomCode;
+usernameDisplay.textContent = username;[cite: 2]
+roomCodeDisplay.textContent = roomCode;[cite: 2]
 
-document.title = `Room ${roomCode}`;
+document.title = `Room ${roomCode}`;[cite: 2]
 
-if (!isHost) {
+if (!isHost) {[cite: 2]
 
-    video.removeAttribute("controls");
+    video.removeAttribute("controls");[cite: 2]
 
 }
 
@@ -56,83 +56,88 @@ if (!isHost) {
 // UPLOAD VIDEO (host only)
 // =========================
 
-if (isHost) {
+if (isHost) {[cite: 2]
 
-    uploadBox.style.display = "flex";
+    uploadBox.style.display = "flex";[cite: 2]
 
-    uploadBtn.onclick = async () => {
+    uploadBtn.onclick = async () => {[cite: 2]
 
-        const file = uploadInput.files[0];
+        const file = uploadInput.files[0];[cite: 2]
 
-        if (!file) {
+        if (!file) {[cite: 2]
 
-            uploadStatus.textContent = "Choose a file first";
+            uploadStatus.textContent = "Choose a file first";[cite: 2]
 
-            return;
+            return;[cite: 2]
 
         }
 
-        uploadStatus.textContent = "Preparing upload...";
+        uploadStatus.textContent = "Preparing upload...";[cite: 2]
 
         try {
+            // Dynamically detect file type (fallback to video/mp4 if empty)
+            const targetType = file.type || "video/mp4";[cite: 2]
 
-            const urlResponse = await fetch("/api/upload-url", {
+            const urlResponse = await fetch("/api/upload-url", {[cite: 2]
 
-                method: "POST",
+                method: "POST",[cite: 2]
 
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json" },[cite: 2]
 
-                body: JSON.stringify({ filename: file.name })
+                body: JSON.stringify({ 
+                    filename: file.name,[cite: 2]
+                    contentType: targetType 
+                })
 
-            });
+            });[cite: 2]
 
-            const urlData = await urlResponse.json();
+            const urlData = await urlResponse.json();[cite: 2]
 
-            if (!urlResponse.ok) {
+            if (!urlResponse.ok) {[cite: 2]
 
-                uploadStatus.textContent = urlData.error || "Could not start upload";
+                uploadStatus.textContent = urlData.error || "Could not start upload";[cite: 2]
 
-                return;
-
-            }
-
-            uploadStatus.textContent = "Uploading to storage...";
-
-            const uploadResponse = await fetch(urlData.uploadUrl, {
-
-                method: "PUT",
-
-                headers: { "Content-Type": "video/mp4" },
-
-                body: file
-
-            });
-
-            if (!uploadResponse.ok) {
-
-                uploadStatus.textContent = "Upload failed";
-
-                return;
+                return;[cite: 2]
 
             }
 
-            uploadStatus.textContent = "Uploaded! Playing now.";
+            uploadStatus.textContent = "Uploading to storage...";[cite: 2]
 
-            uploadInput.value = "";
+            const uploadResponse = await fetch(urlData.uploadUrl, {[cite: 2]
 
-            socket.emit("changeMovie", {
+                method: "PUT",[cite: 2]
 
-                roomCode,
+                headers: { "Content-Type": targetType }, // Matches signature perfectly
 
-                movie: urlData.key,
+                body: file[cite: 2]
 
-                source: "b2"
+            });[cite: 2]
 
-            });
+            if (!uploadResponse.ok) {[cite: 2]
 
-        } catch (e) {
+                uploadStatus.textContent = "Upload failed";[cite: 2]
 
-            uploadStatus.textContent = "Upload failed";
+                return;[cite: 2]
+
+            }
+
+            uploadStatus.textContent = "Uploaded! Playing now.";[cite: 2]
+
+            uploadInput.value = "";[cite: 2]
+
+            socket.emit("changeMovie", {[cite: 2]
+
+                roomCode,[cite: 2]
+
+                movie: urlData.key,[cite: 2]
+
+                source: "b2"[cite: 2]
+
+            });[cite: 2]
+
+        } catch (e) {[cite: 2]
+
+            uploadStatus.textContent = "Upload failed";[cite: 2]
 
         }
 
@@ -144,147 +149,147 @@ if (isHost) {
 // JOIN ROOM
 // =========================
 
-socket.emit("joinRoom", {
-    username,
-    roomCode,
-    isHost
-});
+socket.emit("joinRoom", {[cite: 2]
+    username,[cite: 2]
+    roomCode,[cite: 2]
+    isHost[cite: 2]
+});[cite: 2]
 
 // =========================
 // LOAD MOVIES
 // =========================
 
-async function loadMovies() {
+async function loadMovies() {[cite: 2]
 
-    videoList.innerHTML = "";
+    videoList.innerHTML = "";[cite: 2]
 
-    const response = await fetch("/api/videos");
+    const response = await fetch("/api/videos");[cite: 2]
 
-    const movies = await response.json();
+    const movies = await response.json();[cite: 2]
 
-    movies.forEach(movie => {
+    movies.forEach(movie => {[cite: 2]
 
-        const item = document.createElement("div");
+        const item = document.createElement("div");[cite: 2]
 
-        item.className = "videoItem";
+        item.className = "videoItem";[cite: 2]
 
-        let html = "";
+        let html = "";[cite: 2]
 
-        html += `<div class="videoTitle">${movie.replace(".mp4","")}</div>`;
+        html += `<div class="videoTitle">${movie.replace(".mp4","")}</div>`;[cite: 2]
 
-        if(isHost){
+        if(isHost){[cite: 2]
 
-            html += `<div class="hostOnly">Click to play</div>`;
-
-        }
-
-        item.innerHTML = html;
-
-        if(isHost){
-
-            item.onclick = ()=>{
-
-                socket.emit("changeMovie",{
-
-                    roomCode,
-
-                    movie
-
-                });
-
-            }
+            html += `<div class="hostOnly">Click to play</div>`;[cite: 2]
 
         }
 
-        videoList.appendChild(item);
+        item.innerHTML = html;[cite: 2]
 
-    });
+        if(isHost){[cite: 2]
+
+            item.onclick = ()=>{[cite: 2]
+
+                socket.emit("changeMovie",{[cite: 2]
+
+                    roomCode,[cite: 2]
+
+                    movie[cite: 2]
+
+                });[cite: 2]
+
+            }[cite: 2]
+
+        }
+
+        videoList.appendChild(item);[cite: 2]
+
+    });[cite: 2]
 
 }
 
-loadMovies();
+loadMovies();[cite: 2]
 
 // =========================
 // PLAYBACK SYNC (host drives, others follow)
 // =========================
 
-let suppressEvents = false; // avoids re-broadcasting changes we just applied ourselves
+let suppressEvents = false;[cite: 2]
 
-if (isHost) {
+if (isHost) {[cite: 2]
 
-    video.addEventListener("play", () => {
+    video.addEventListener("play", () => {[cite: 2]
 
-        if (suppressEvents) return;
+        if (suppressEvents) return;[cite: 2]
 
-        socket.emit("playbackControl", {
-            roomCode,
-            action: "play",
-            currentTime: video.currentTime
-        });
+        socket.emit("playbackControl", {[cite: 2]
+            roomCode,[cite: 2]
+            action: "play",[cite: 2]
+            currentTime: video.currentTime[cite: 2]
+        });[cite: 2]
 
-    });
+    });[cite: 2]
 
-    video.addEventListener("pause", () => {
+    video.addEventListener("pause", () => {[cite: 2]
 
-        if (suppressEvents) return;
+        if (suppressEvents) return;[cite: 2]
 
-        socket.emit("playbackControl", {
-            roomCode,
-            action: "pause",
-            currentTime: video.currentTime
-        });
+        socket.emit("playbackControl", {[cite: 2]
+            roomCode,[cite: 2]
+            action: "pause",[cite: 2]
+            currentTime: video.currentTime[cite: 2]
+        });[cite: 2]
 
-    });
+    });[cite: 2]
 
-    video.addEventListener("seeked", () => {
+    video.addEventListener("seeked", () => {[cite: 2]
 
-        if (suppressEvents) return;
+        if (suppressEvents) return;[cite: 2]
 
-        socket.emit("playbackControl", {
-            roomCode,
-            action: video.paused ? "pause" : "play",
-            currentTime: video.currentTime
-        });
+        socket.emit("playbackControl", {[cite: 2]
+            roomCode,[cite: 2]
+            action: video.paused ? "pause" : "play",[cite: 2]
+            currentTime: video.currentTime[cite: 2]
+        });[cite: 2]
 
-    });
+    });[cite: 2]
 
 }
 
-socket.on("playbackControl", ({ action, currentTime }) => {
+socket.on("playbackControl", ({ action, currentTime }) => {[cite: 2]
 
-    suppressEvents = true;
+    suppressEvents = true;[cite: 2]
 
-    if (Math.abs(video.currentTime - currentTime) > 0.75) {
+    if (Math.abs(video.currentTime - currentTime) > 0.75) {[cite: 2]
 
-        video.currentTime = currentTime;
+        video.currentTime = currentTime;[cite: 2]
 
-    }
+    }[cite: 2]
 
-    if (action === "play") {
+    if (action === "play") {[cite: 2]
 
-        video.play().catch(() => {});
+        video.play().catch(() => {});[cite: 2]
 
-    } else {
+    } else {[cite: 2]
 
-        video.pause();
+        video.pause();[cite: 2]
 
-    }
+    }[cite: 2]
 
-    setTimeout(() => { suppressEvents = false; }, 150);
+    setTimeout(() => { suppressEvents = false; }, 150);[cite: 2]
 
-});
+});[cite: 2]
 
 // =========================
 // LEAVE ROOM
 // =========================
 
-leaveBtn.onclick = ()=>{
+leaveBtn.onclick = ()=>{[cite: 2]
 
-    localStorage.removeItem("roomCode");
+    localStorage.removeItem("roomCode");[cite: 2]
 
-    localStorage.removeItem("isHost");
+    localStorage.removeItem("isHost");[cite: 2]
 
-    window.location="/";
+    window.location="/";[cite: 2]
 
 };
 
@@ -292,13 +297,13 @@ leaveBtn.onclick = ()=>{
 // ENTER TO SEND
 // =========================
 
-messageInput.addEventListener("keydown",(e)=>{
+messageInput.addEventListener("keydown",(e)=>{[cite: 2]
 
-    if(e.key==="Enter"){
+    if(e.key==="Enter"){[cite: 2]
 
-        sendBtn.click();
+        sendBtn.click();[cite: 2]
 
-    }
+    }[cite: 2]
 
 });
 
@@ -306,9 +311,9 @@ messageInput.addEventListener("keydown",(e)=>{
 // AUTO SCROLL
 // =========================
 
-function scrollChat(){
+function scrollChat(){[cite: 2]
 
-    messages.scrollTop=messages.scrollHeight;
+    messages.scrollTop=messages.scrollHeight;[cite: 2]
 
 }
 
@@ -316,62 +321,62 @@ function scrollChat(){
 // MESSAGE HELPERS
 // =========================
 
-function addSystemMessage(text){
+function addSystemMessage(text){[cite: 2]
 
-    const div=document.createElement("div");
+    const div=document.createElement("div");[cite: 2]
 
-    div.className="system";
+    div.className="system";[cite: 2]
 
-    div.innerText=text;
+    div.innerText=text;[cite: 2]
 
-    messages.appendChild(div);
+    messages.appendChild(div);[cite: 2]
 
-    scrollChat();
+    scrollChat();[cite: 2]
 
 }
 
-function addChatMessage(data){
+function addChatMessage(data){[cite: 2]
 
-    const div=document.createElement("div");
+    const div=document.createElement("div");[cite: 2]
 
-    div.className="message";
+    div.className="message";[cite: 2]
 
-    div.innerHTML=`
+    div.innerHTML=`[cite: 2]
 
-        <span class="sender">${data.username}</span>
+        <span class="sender">${data.username}</span>[cite: 2]
 
-        <span class="time">${data.time}</span>
+        <span class="time">${data.time}</span>[cite: 2]
 
-        <br>
+        <br>[cite: 2]
 
-        ${data.message}
+        ${data.message}[cite: 2]
 
-    `;
+    `;[cite: 2]
 
-    messages.appendChild(div);
+    messages.appendChild(div);[cite: 2]
 
-    scrollChat();
+    scrollChat();[cite: 2]
 
 }
 // =========================
 // SEND CHAT
 // =========================
 
-sendBtn.onclick = () => {
+sendBtn.onclick = () => {[cite: 2]
 
-    const text = messageInput.value.trim();
+    const text = messageInput.value.trim();[cite: 2]
 
-    if (text === "") return;
+    if (text === "") return;[cite: 2]
 
-    socket.emit("chat", {
+    socket.emit("chat", {[cite: 2]
 
-        roomCode,
-        username,
-        message: text
+        roomCode,[cite: 2]
+        username,[cite: 2]
+        message: text[cite: 2]
 
-    });
+    });[cite: 2]
 
-    messageInput.value = "";
+    messageInput.value = "";[cite: 2]
 
 };
 
@@ -379,9 +384,9 @@ sendBtn.onclick = () => {
 // RECEIVE CHAT
 // =========================
 
-socket.on("chat", data => {
+socket.on("chat", data => {[cite: 2]
 
-    addChatMessage(data);
+    addChatMessage(data);[cite: 2]
 
 });
 
@@ -389,9 +394,9 @@ socket.on("chat", data => {
 // SYSTEM MESSAGES
 // =========================
 
-socket.on("systemMessage", text => {
+socket.on("systemMessage", text => {[cite: 2]
 
-    addSystemMessage(text);
+    addSystemMessage(text);[cite: 2]
 
 });
 
@@ -399,35 +404,35 @@ socket.on("systemMessage", text => {
 // USERS LIST
 // =========================
 
-socket.on("users", users => {
+socket.on("users", users => {[cite: 2]
 
-    usersList.innerHTML = "";
+    usersList.innerHTML = "";[cite: 2]
 
-    users.forEach(name => {
+    users.forEach(name => {[cite: 2]
 
-        const div = document.createElement("div");
+        const div = document.createElement("div");[cite: 2]
 
-        div.className = "user";
+        div.className = "user";[cite: 2]
 
-        let badge = "";
+        let badge = "";[cite: 2]
 
-        if (name === username && isHost) {
+        if (name === username && isHost) {[cite: 2]
 
-            badge = `<span class="hostBadge">Host</span>`;
+            badge = `<span class="hostBadge">Host</span>`;[cite: 2]
 
-        }
+        }[cite: 2]
 
-        div.innerHTML = `
+        div.innerHTML = `[cite: 2]
 
-            <span>${name}</span>
+            <span>${name}</span>[cite: 2]
 
-            ${badge}
+            ${badge}[cite: 2]
 
-        `;
+        `;[cite: 2]
 
-        usersList.appendChild(div);
+        usersList.appendChild(div);[cite: 2]
 
-    });
+    });[cite: 2]
 
 });
 
@@ -435,13 +440,13 @@ socket.on("users", users => {
 // MOVIE CHANGED
 // =========================
 
-socket.on("movieChanged", movie => {
+socket.on("movieChanged", movie => {[cite: 2]
 
-    video.src = movie;
+    video.src = movie;[cite: 2]
 
-    video.load();
+    video.load();[cite: 2]
 
-    addSystemMessage("Movie changed");
+    addSystemMessage("Movie changed");[cite: 2]
 
 });
 
@@ -449,14 +454,14 @@ socket.on("movieChanged", movie => {
 // ROOM CLOSED
 // =========================
 
-socket.on("roomClosed", () => {
+socket.on("roomClosed", () => {[cite: 2]
 
-    alert("The host closed the room.");
+    alert("The host closed the room.");[cite: 2]
 
-    localStorage.removeItem("roomCode");
-    localStorage.removeItem("isHost");
+    localStorage.removeItem("roomCode");[cite: 2]
+    localStorage.removeItem("isHost");[cite: 2]
 
-    window.location="/";
+    window.location="/";[cite: 2]
 
 });
 
@@ -464,22 +469,22 @@ socket.on("roomClosed", () => {
 // INITIAL SYNC
 // =========================
 
-socket.on("syncState", state => {
+socket.on("syncState", state => {[cite: 2]
 
-    if(state.movie){
+    if(state.movie){[cite: 2]
 
-        video.src=state.movie;
+        video.src=state.movie;[cite: 2]
 
-        video.load();
+        video.load();[cite: 2]
 
-    }
+    }[cite: 2]
 
-    video.currentTime=state.currentTime||0;
+    video.currentTime=state.currentTime||0;[cite: 2]
 
-    if(state.playing){
+    if(state.playing){[cite: 2]
 
-        video.play().catch(()=>{});
+        video.play().catch(()=>{});[cite: 2]
 
-    }
+    }[cite: 2]
 
 });
