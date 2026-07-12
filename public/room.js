@@ -73,13 +73,16 @@ if (isHost) {
                 return;
             }
 
-            uploadStatus.textContent = "Uploading to storage...";
+           uploadStatus.textContent = "Uploading to storage...";
 
+            // REMOVE custom headers here so the browser sends a "simple request" 
+            // and skips the strict B2 preflight verification check.
             const uploadResponse = await fetch(urlData.uploadUrl, {
                 method: "PUT",
-                headers: { "Content-Type": targetType },
-                body: file
+                body: file // Just pass the raw file binary directly
             });
+
+            if (!uploadResponse.ok) {
 
             if (!uploadResponse.ok) {
                 uploadStatus.textContent = "Upload failed";
