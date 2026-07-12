@@ -55,7 +55,6 @@ if (isHost) {
         uploadStatus.textContent = "Preparing upload...";
 
         try {
-            // Option 2: Grab the actual file type dynamically
             const targetType = file.type || "video/mp4";
 
             const urlResponse = await fetch("/api/upload-url", {
@@ -73,16 +72,13 @@ if (isHost) {
                 return;
             }
 
-           uploadStatus.textContent = "Uploading to storage...";
+            uploadStatus.textContent = "Uploading to storage...";
 
-            // REMOVE custom headers here so the browser sends a "simple request" 
-            // and skips the strict B2 preflight verification check.
+            // Clean PUT fetch with NO headers to bypass B2 preflight blocks
             const uploadResponse = await fetch(urlData.uploadUrl, {
                 method: "PUT",
-                body: file // Just pass the raw file binary directly
+                body: file
             });
-
-            if (!uploadResponse.ok) {
 
             if (!uploadResponse.ok) {
                 uploadStatus.textContent = "Upload failed";
@@ -102,7 +98,6 @@ if (isHost) {
         }
     };
 }
-
 // =========================
 // JOIN ROOM
 // =========================
