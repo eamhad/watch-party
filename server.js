@@ -9,7 +9,9 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    maxHttpBufferSize: 5 * 1024 * 1024 // 5MB, enough for a short voice note
+});
 
 app.use(express.json());
 
@@ -298,6 +300,19 @@ io.on("connection", (socket) => {
         io.to(roomCode).emit("chat", {
             username,
             message,
+            time: timeNow()
+        });
+    });
+
+    // ---- VOICE NOTE ----
+    socket.on("voiceNote", ({ roomCode, username, audio, duration }) => {
+        if (!rooms[roomCode]) return;
+        if (!audio) return;
+
+        io.to(roomCode).emit("voiceNote", {
+            username,
+            audio,
+            duration,
             time: timeNow()
         });
     });
