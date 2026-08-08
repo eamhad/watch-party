@@ -747,6 +747,54 @@ video{
 
 }
 
+#micBtn{
+
+    background:#242935;
+
+    font-size:16px;
+
+    padding:10px 12px;
+
+}
+
+#micBtn.recording{
+
+    background:#ef4444;
+
+    animation:pulse 1s infinite;
+
+}
+
+@keyframes pulse{
+
+    0%{ opacity:1; }
+
+    50%{ opacity:.6; }
+
+    100%{ opacity:1; }
+
+}
+
+.voiceNote{
+
+    margin-bottom:15px;
+
+}
+
+.voiceNote audio{
+
+    display:block;
+
+    margin-top:6px;
+
+    width:100%;
+
+    max-width:260px;
+
+    height:32px;
+
+}
+
 .chatInput button:hover{
 
     background:#2563eb;

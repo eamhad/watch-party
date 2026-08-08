@@ -39,6 +39,7 @@ const messages = document.getElementById("messages");
 const messageInput = document.getElementById("messageInput");
 
 const sendBtn = document.getElementById("sendBtn");
+const micBtn = document.getElementById("micBtn");
 
 const leaveBtn = document.getElementById("leaveRoom");
 
@@ -374,6 +375,148 @@ socket.on("playbackControl", ({ action, currentTime }) => {
     }
 
     setTimeout(() => { suppressEvents = false; }, 150);
+
+});
+
+// =========================
+// VOICE NOTES
+// =========================
+
+const MAX_RECORDING_MS = 60 * 1000; // 1 minute cap
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingTimeout = null;
+
+function blobToBase64(blob) {
+
+    return new Promise((resolve, reject) => {
+
+        const reader = new FileReader();
+
+        reader.onloadend = () => resolve(reader.result);
+
+        reader.onerror = reject;
+
+        reader.readAsDataURL(blob);
+
+    });
+
+}
+
+async function startRecording() {
+
+    try {
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        mediaRecorder = new MediaRecorder(stream);
+
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+
+            if (e.data.size > 0) recordedChunks.push(e.data);
+
+        };
+
+        mediaRecorder.onstop = async () => {
+
+            stream.getTracks().forEach(track => track.stop());
+
+            clearTimeout(recordingTimeout);
+
+            micBtn.classList.remove("recording");
+
+            if (recordedChunks.length === 0) return;
+
+            const blob = new Blob(recordedChunks, { type: "audio/webm" });
+
+            const base64Audio = await blobToBase64(blob);
+
+            socket.emit("voiceNote", {
+
+                roomCode,
+
+                username,
+
+                audio: base64Audio
+
+            });
+
+        };
+
+        mediaRecorder.start();
+
+        micBtn.classList.add("recording");
+
+        recordingTimeout = setTimeout(() => {
+
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+
+                mediaRecorder.stop();
+
+            }
+
+        }, MAX_RECORDING_MS);
+
+    } catch (e) {
+
+        alert("Could not access microphone");
+
+    }
+
+}
+
+function stopRecording() {
+
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+
+        mediaRecorder.stop();
+
+    }
+
+}
+
+micBtn.onclick = () => {
+
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+
+        stopRecording();
+
+    } else {
+
+        startRecording();
+
+    }
+
+};
+
+function addVoiceMessage(data) {
+
+    const div = document.createElement("div");
+
+    div.className = "voiceNote message";
+
+    div.innerHTML = `
+
+        <span class="sender">${data.username}</span>
+
+        <span class="time">${data.time}</span>
+
+        <audio controls src="${data.audio}"></audio>
+
+    `;
+
+    messages.appendChild(div);
+
+    scrollChat();
+
+}
+
+socket.on("voiceNote", data => {
+
+    addVoiceMessage(data);
 
 });
 
