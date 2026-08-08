@@ -45,7 +45,8 @@ async function getPlaybackUrl(key) {
     // Route through the Cloudflare Worker proxy if configured, so downloads
     // count as Cloudflare-to-B2 traffic (free) instead of hitting the B2 daily cap
     if (process.env.CF_WORKER_URL) {
-        return `${process.env.CF_WORKER_URL}/?url=${encodeURIComponent(b2Url)}`;
+        const workerUrl = process.env.CF_WORKER_URL.replace(/\/+$/, "");
+        return `${workerUrl}/?url=${encodeURIComponent(b2Url)}`;
     }
 
     return b2Url;
