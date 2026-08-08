@@ -40,7 +40,15 @@ async function getPlaybackUrl(key) {
         Key: key
     });
 
-    return await getSignedUrl(b2, command, { expiresIn: 6 * 60 * 60 }); // 6 hours
+    const b2Url = await getSignedUrl(b2, command, { expiresIn: 6 * 60 * 60 }); // 6 hours
+
+    // Route through the Cloudflare Worker proxy if configured, so downloads
+    // count as Cloudflare-to-B2 traffic (free) instead of hitting the B2 daily cap
+    if (process.env.CF_WORKER_URL) {
+        return `${process.env.CF_WORKER_URL}/?url=${encodeURIComponent(b2Url)}`;
+    }
+
+    return b2Url;
 }
 
 // Get a temporary link the host's browser can upload directly to
