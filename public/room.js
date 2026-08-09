@@ -32,6 +32,10 @@ const uploadInput = document.getElementById("uploadInput");
 const uploadBtn = document.getElementById("uploadBtn");
 const uploadStatus = document.getElementById("uploadStatus");
 
+const urlBox = document.getElementById("urlBox");
+const urlInput = document.getElementById("urlInput");
+const urlPlayBtn = document.getElementById("urlPlayBtn");
+
 const usersList = document.getElementById("usersList");
 
 const messages = document.getElementById("messages");
@@ -117,6 +121,25 @@ document.addEventListener("fullscreenchange", () => {
 if (isHost) {
 
     uploadBox.style.display = "flex";
+    urlBox.style.display = "flex";
+
+    urlPlayBtn.onclick = () => {
+
+        const url = urlInput.value.trim();
+
+        if (!url) return;
+
+        socket.emit("changeMovie", {
+
+            roomCode,
+
+            movie: url,
+
+            source: "url"
+
+        });
+
+    };
 
     uploadBtn.onclick = async () => {
 
@@ -262,7 +285,9 @@ async function loadMovies() {
 
     const b2Movies = await b2Response.json();
 
-    b2Movies.forEach(key => {
+    if (Array.isArray(b2Movies)) {
+
+        b2Movies.forEach(key => {
 
         const item = document.createElement("div");
 
@@ -303,6 +328,8 @@ async function loadMovies() {
         videoList.appendChild(item);
 
     });
+
+    }
 
 }
 
