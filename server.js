@@ -218,6 +218,10 @@ async function resolveMovieSrc(room) {
         return await getPlaybackUrl(room.movieKey);
     }
 
+    if (room.movieSource === "url") {
+        return room.movieKey; // already a full, public URL
+    }
+
     return "/videos/" + room.movieKey;
 }
 
@@ -333,7 +337,7 @@ io.on("connection", (socket) => {
         if (socket.id !== room.hostId) return; // ignore non-host attempts
 
         room.movieKey = movie;
-        room.movieSource = source === "b2" ? "b2" : "local";
+        room.movieSource = source === "b2" ? "b2" : (source === "url" ? "url" : "local");
         room.currentTime = 0;
         room.playing = false;
 
