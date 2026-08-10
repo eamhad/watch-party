@@ -188,6 +188,19 @@ app.post("/api/upload", (req, res) => {
 // }
 const rooms = {};
 
+// Permanent room - always exists, never gets deleted even if the host leaves for good
+rooms["CUTIEE"] = {
+    users: {},
+    hostId: null,
+    hostUsername: null,
+    closeTimer: null,
+    movieKey: null,
+    movieSource: null,
+    currentTime: 0,
+    playing: false,
+    permanent: true
+};
+
 function generateRoomCode() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let code = "";
@@ -208,7 +221,11 @@ function emitUsers(roomCode) {
 }
 
 function timeNow() {
-    return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return new Date().toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Kolkata"
+    });
 }
 
 async function resolveMovieSrc(room) {
@@ -260,6 +277,8 @@ io.on("connection", (socket) => {
         rooms[roomCode] = {
             users: {},
             hostId: null,
+            hostUsername: null,
+            closeTimer: null,
             movieKey: null,
             movieSource: null,
             currentTime: 0,
@@ -290,9 +309,20 @@ io.on("connection", (socket) => {
 
         room.users[socket.id] = username;
 
-        // First host to actually connect on the room page claims host status
+        // First host to ever connect claims host status.
+        // If the host slot is currently open due to a recent disconnect
+        // (grace period), the same username reclaims it and any pending
+        // room-close timer is cancelled.
         if (isHost && !room.hostId) {
-            room.hostId = socket.id;
+            if (!room.hostUsername || room.hostUsername === username) {
+                room.hostId = socket.id;
+                room.hostUsername = username;
+
+                if (room.closeTimer) {
+                    clearTimeout(room.closeTimer);
+                    room.closeTimer = null;
+                }
+            }
         }
 
         io.to(roomCode).emit("systemMessage", `${username} joined the room`);
@@ -368,9 +398,21 @@ io.on("connection", (socket) => {
         delete room.users[socket.id];
 
         if (socket.id === room.hostId) {
-            // Host left -> close the room for everyone
-            io.to(roomCode).emit("roomClosed");
-            delete rooms[roomCode];
+            // Host disconnected - don't close immediately. Open a short
+            // grace period in case this is just a reload or brief network
+            // drop; if the host doesn't reconnect in time, close for real.
+            room.hostId = null;
+
+            const HOST_GRACE_MS = 20 * 1000;
+
+            room.closeTimer = setTimeout(() => {
+                const stillOpenRoom = rooms[roomCode];
+                if (stillOpenRoom && !stillOpenRoom.hostId && !stillOpenRoom.permanent) {
+                    io.to(roomCode).emit("roomClosed");
+                    delete rooms[roomCode];
+                }
+            }, HOST_GRACE_MS);
+
             return;
         }
 
@@ -378,7 +420,7 @@ io.on("connection", (socket) => {
             io.to(roomCode).emit("systemMessage", `${username} left the room`);
         }
 
-        if (Object.keys(room.users).length === 0) {
+        if (Object.keys(room.users).length === 0 && !room.permanent) {
             delete rooms[roomCode];
         } else {
             emitUsers(roomCode);
