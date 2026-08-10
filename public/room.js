@@ -275,13 +275,19 @@ applyHostUI();
 // LOAD MOVIES
 // =========================
 
+let loadMoviesToken = 0;
+
 async function loadMovies() {
+
+    const myToken = ++loadMoviesToken;
 
     videoList.innerHTML = "";
 
     const response = await fetch("/api/videos");
 
     const movies = await response.json();
+
+    if (myToken !== loadMoviesToken) return; // a newer call started - discard this one
 
     movies.forEach(movie => {
 
@@ -324,6 +330,8 @@ async function loadMovies() {
     const b2Response = await fetch("/api/b2-videos");
 
     const b2Movies = await b2Response.json();
+
+    if (myToken !== loadMoviesToken) return; // a newer call started - discard this one
 
     if (Array.isArray(b2Movies)) {
 
@@ -372,8 +380,6 @@ async function loadMovies() {
     }
 
 }
-
-loadMovies();
 
 // =========================
 // PLAYBACK SYNC (host drives, others follow)
