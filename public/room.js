@@ -6,7 +6,7 @@ const socket = io();
 
 const username = localStorage.getItem("username");
 const roomCode = localStorage.getItem("roomCode");
-const isHost = localStorage.getItem("isHost") === "true";
+let isHost = localStorage.getItem("isHost") === "true";
 
 if (!username || !roomCode) {
     window.location = "/";
@@ -55,12 +55,6 @@ usernameDisplay.textContent = username;
 roomCodeDisplay.textContent = roomCode;
 
 document.title = `Room ${roomCode}`;
-
-if (!isHost) {
-
-    video.removeAttribute("controls");
-
-}
 
 // =========================
 // FULLSCREEN (available to host and viewers)
@@ -115,111 +109,155 @@ document.addEventListener("fullscreenchange", () => {
 });
 
 // =========================
-// UPLOAD VIDEO (host only)
+// UPLOAD VIDEO (host controls - attached always, shown only to host)
 // =========================
 
-if (isHost) {
+urlPlayBtn.onclick = () => {
 
-    uploadBox.style.display = "flex";
-    urlBox.style.display = "flex";
+    const url = urlInput.value.trim();
 
-    urlPlayBtn.onclick = () => {
+    if (!url) return;
 
-        const url = urlInput.value.trim();
+    socket.emit("changeMovie", {
 
-        if (!url) return;
+        roomCode,
 
-        socket.emit("changeMovie", {
+        movie: url,
 
-            roomCode,
+        source: "url"
 
-            movie: url,
+    });
 
-            source: "url"
+};
+
+uploadBtn.onclick = async () => {
+
+    const file = uploadInput.files[0];
+
+    if (!file) {
+
+        uploadStatus.textContent = "Choose a file first";
+
+        return;
+
+    }
+
+    uploadStatus.textContent = "Preparing upload...";
+
+    try {
+
+        const urlResponse = await fetch("/api/upload-url", {
+
+            method: "POST",
+
+            headers: { "Content-Type": "application/json" },
+
+            body: JSON.stringify({ filename: file.name })
 
         });
 
-    };
+        const urlData = await urlResponse.json();
 
-    uploadBtn.onclick = async () => {
+        if (!urlResponse.ok) {
 
-        const file = uploadInput.files[0];
-
-        if (!file) {
-
-            uploadStatus.textContent = "Choose a file first";
+            uploadStatus.textContent = urlData.error || "Could not start upload";
 
             return;
 
         }
 
-        uploadStatus.textContent = "Preparing upload...";
+        uploadStatus.textContent = "Uploading to storage...";
 
-        try {
+        const uploadResponse = await fetch(urlData.uploadUrl, {
 
-            const urlResponse = await fetch("/api/upload-url", {
+            method: "PUT",
 
-                method: "POST",
+            headers: { "Content-Type": "video/mp4" },
 
-                headers: { "Content-Type": "application/json" },
+            body: file
 
-                body: JSON.stringify({ filename: file.name })
+        });
 
-            });
-
-            const urlData = await urlResponse.json();
-
-            if (!urlResponse.ok) {
-
-                uploadStatus.textContent = urlData.error || "Could not start upload";
-
-                return;
-
-            }
-
-            uploadStatus.textContent = "Uploading to storage...";
-
-            const uploadResponse = await fetch(urlData.uploadUrl, {
-
-                method: "PUT",
-
-                headers: { "Content-Type": "video/mp4" },
-
-                body: file
-
-            });
-
-            if (!uploadResponse.ok) {
-
-                uploadStatus.textContent = "Upload failed";
-
-                return;
-
-            }
-
-            uploadStatus.textContent = "Uploaded! Playing now.";
-
-            uploadInput.value = "";
-
-            socket.emit("changeMovie", {
-
-                roomCode,
-
-                movie: urlData.key,
-
-                source: "b2"
-
-            });
-
-        } catch (e) {
+        if (!uploadResponse.ok) {
 
             uploadStatus.textContent = "Upload failed";
 
+            return;
+
         }
 
-    };
+        uploadStatus.textContent = "Uploaded! Playing now.";
+
+        uploadInput.value = "";
+
+        socket.emit("changeMovie", {
+
+            roomCode,
+
+            movie: urlData.key,
+
+            source: "b2"
+
+        });
+
+    } catch (e) {
+
+        uploadStatus.textContent = "Upload failed";
+
+    }
+
+};
+
+// =========================
+// REACTIVE HOST UI
+// =========================
+// Host status is confirmed by the server (see "hostStatus" handler below),
+// not just assumed from how the room was entered - this matters for shared
+// rooms like the permanent CUTIEE room, where anyone joining can become host.
+
+let hostControlsBound = false;
+
+function applyHostUI() {
+
+    if (isHost) {
+
+        video.setAttribute("controls", "");
+
+        uploadBox.style.display = "flex";
+
+        urlBox.style.display = "flex";
+
+        if (!hostControlsBound) {
+
+            bindHostPlaybackControls();
+
+            hostControlsBound = true;
+
+        }
+
+    } else {
+
+        video.removeAttribute("controls");
+
+        uploadBox.style.display = "none";
+
+        urlBox.style.display = "none";
+
+    }
+
+    loadMovies();
 
 }
+
+socket.on("hostStatus", (granted) => {
+
+    isHost = granted;
+
+    localStorage.setItem("isHost", granted ? "true" : "false");
+
+    applyHostUI();
+
+});
 
 // =========================
 // JOIN ROOM
@@ -230,6 +268,8 @@ socket.emit("joinRoom", {
     roomCode,
     isHost
 });
+
+applyHostUI();
 
 // =========================
 // LOAD MOVIES
@@ -341,7 +381,7 @@ loadMovies();
 
 let suppressEvents = false; // avoids re-broadcasting changes we just applied ourselves
 
-if (isHost) {
+function bindHostPlaybackControls() {
 
     video.addEventListener("play", () => {
 
