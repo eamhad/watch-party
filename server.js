@@ -309,21 +309,31 @@ io.on("connection", (socket) => {
 
         room.users[socket.id] = username;
 
-        // First host to ever connect claims host status.
-        // If the host slot is currently open due to a recent disconnect
-        // (grace period), the same username reclaims it and any pending
-        // room-close timer is cancelled.
-        if (isHost && !room.hostId) {
-            if (!room.hostUsername || room.hostUsername === username) {
-                room.hostId = socket.id;
-                room.hostUsername = username;
+        // Host status is decided here, not by the button the client clicked.
+        // Whoever joins a genuinely hostless room becomes host - this covers
+        // a brand new room's first joiner AND anyone joining a permanent
+        // room (like CUTIEE) that currently has no host.
+        // During an active reconnect grace period, only the matching
+        // username can reclaim the slot - a random new joiner can't hijack it.
+        let becameHost = false;
+        const graceActive = !!room.closeTimer;
 
-                if (room.closeTimer) {
+        if (!room.hostId) {
+            if (graceActive) {
+                if (room.hostUsername === username) {
+                    room.hostId = socket.id;
+                    becameHost = true;
                     clearTimeout(room.closeTimer);
                     room.closeTimer = null;
                 }
+            } else {
+                room.hostId = socket.id;
+                room.hostUsername = username;
+                becameHost = true;
             }
         }
+
+        socket.emit("hostStatus", becameHost);
 
         io.to(roomCode).emit("systemMessage", `${username} joined the room`);
         emitUsers(roomCode);
@@ -407,9 +417,16 @@ io.on("connection", (socket) => {
 
             room.closeTimer = setTimeout(() => {
                 const stillOpenRoom = rooms[roomCode];
-                if (stillOpenRoom && !stillOpenRoom.hostId && !stillOpenRoom.permanent) {
-                    io.to(roomCode).emit("roomClosed");
-                    delete rooms[roomCode];
+                if (stillOpenRoom && !stillOpenRoom.hostId) {
+                    if (!stillOpenRoom.permanent) {
+                        io.to(roomCode).emit("roomClosed");
+                        delete rooms[roomCode];
+                    } else {
+                        // Permanent room stays open indefinitely - open the
+                        // host slot to anyone since the host didn't return
+                        stillOpenRoom.closeTimer = null;
+                        stillOpenRoom.hostUsername = null;
+                    }
                 }
             }, HOST_GRACE_MS);
 
