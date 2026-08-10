@@ -379,6 +379,18 @@ if (isHost) {
 
     });
 
+    // Periodic re-sync so viewers who fell behind due to their own
+    // buffering catch back up, even if the host never pauses/seeks
+    setInterval(() => {
+
+        socket.emit("playbackControl", {
+            roomCode,
+            action: video.paused ? "pause" : "play",
+            currentTime: video.currentTime
+        });
+
+    }, 5000);
+
 }
 
 socket.on("playbackControl", ({ action, currentTime }) => {
